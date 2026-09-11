@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.lianai.jinian",
+        "sha256_cert_fingerprints": ["06:0A:AB:CA:B3:1B:0F:1E:3F:64:A8:F1:6C:EA:DE:E6:BB:99:8A:B3:30:98:3A:F5:80:4F:D0:10:3E:BF:90:C9"]
+      }
+    }]
