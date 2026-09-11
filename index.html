@@ -4,6 +4,13 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#fb7185" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" type="image/svg+xml" href="icon.svg" />
+<link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/618x618/2764.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="恋爱纪念册" />
 <title>恋爱纪念册</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -108,10 +115,15 @@
   .viewer .acts { display:flex; gap:12px; margin-top:14px; }
   .viewer .acts button { border:none; border-radius:999px; padding:8px 20px; font-size:14px; cursor:pointer; background:rgba(255,255,255,.2); color:#fff; }
   .viewer .acts button.danger { background:rgba(244,63,94,.8); }
+  #installBar { position:fixed; top:0; left:0; right:0; z-index:70; display:none; justify-content:center; }
+  #installBar .box { margin:10px; max-width:28rem; width:calc(100% - 20px); background:linear-gradient(90deg,#fb7185,#ec4899); color:#fff; border-radius:16px; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 8px 20px rgba(251,113,133,.4); font-size:14px; }
+  #installBar button { border:none; border-radius:999px; background:#fff; color:#f43f5e; font-weight:600; padding:8px 16px; font-size:13px; cursor:pointer; flex-shrink:0; margin-left:10px; }
+  #installBar .close { background:none; color:rgba(255,255,255,.8); padding:8px 4px; font-weight:400; }
 </style>
 </head>
 <body>
 <div id="app"></div>
+<div id="installBar"><div class="box"><span id="installTip">📲 点这里，把它装到手机桌面</span><button id="installBtn">安装</button><button class="close" id="installClose">✕</button></div></div>
 <input type="file" id="fileInput" accept="image/*" multiple style="display:none" />
 <script>
 "use strict";
@@ -528,6 +540,45 @@ function compress(file) {
 }
 
 render();
+
+(function () {
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+  const bar = $('installBar'), tip = $('installTip'), btn = $('installBtn');
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if (standalone) return;
+  let deferred = null;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const dismissed = localStorage.getItem('love.installDismiss');
+  if (dismissed) return;
+
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferred = e;
+    tip.textContent = '📲 点这里，把它装到手机桌面';
+    btn.textContent = '安装';
+    bar.style.display = 'flex';
+  });
+  if (isIOS) {
+    tip.textContent = '📲 点底部「分享」→「添加到主屏幕」，就能像 App 一样打开';
+    btn.textContent = '知道了';
+    bar.style.display = 'flex';
+  }
+  btn.addEventListener('click', async () => {
+    if (deferred) {
+      deferred.prompt();
+      await deferred.userChoice;
+      deferred = null;
+    }
+    bar.style.display = 'none';
+    localStorage.setItem('love.installDismiss', '1');
+  });
+  $('installClose').addEventListener('click', () => {
+    bar.style.display = 'none';
+    localStorage.setItem('love.installDismiss', '1');
+  });
+})();
 </script>
 </body>
 </html>

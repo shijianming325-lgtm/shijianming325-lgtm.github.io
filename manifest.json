@@ -1,0 +1,16 @@
+{
+  "name": "恋爱纪念册",
+  "short_name": "恋爱纪念册",
+  "description": "记录在一起的每一天：纪念日、相册、清单、心情、悄悄话、时光胶囊",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fff1f2",
+  "theme_color": "#fb7185",
+  "lang": "zh-CN",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
