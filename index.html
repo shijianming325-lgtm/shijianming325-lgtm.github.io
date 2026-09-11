@@ -556,15 +556,25 @@ render();
   window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
     deferred = e;
-    tip.textContent = '📲 点这里，把它装到手机桌面';
-    btn.textContent = '安装';
+    tip.textContent = '📲 点右边「立即安装」，装到手机桌面';
+    btn.textContent = '立即安装';
     bar.style.display = 'flex';
   });
+
   if (isIOS) {
-    tip.textContent = '📲 点底部「分享」→「添加到主屏幕」，就能像 App 一样打开';
+    tip.textContent = '📲 请用 Safari 打开本页 → 点底部「分享」→「添加到主屏幕」';
     btn.textContent = '知道了';
     bar.style.display = 'flex';
+  } else {
+    setTimeout(() => {
+      if (!deferred) {
+        tip.textContent = '📲 点浏览器菜单（右上角⋮或底部☰）→ 选「安装应用」或「添加到主屏幕」';
+        btn.textContent = '知道了';
+        bar.style.display = 'flex';
+      }
+    }, 3000);
   }
+
   btn.addEventListener('click', async () => {
     if (deferred) {
       deferred.prompt();
