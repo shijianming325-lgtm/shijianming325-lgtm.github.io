@@ -102,7 +102,7 @@
   .btn-fuchsia { width:100%; border:none; border-radius:16px; background:linear-gradient(90deg,#a78bfa,#e879f9); color:#fff; font-weight:600; padding:14px; font-size:15px; cursor:pointer; }
   .btn-fuchsia:disabled { opacity:.4; }
   /* 设置页 */
-  .setup { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 32px; background:linear-gradient(180deg,#ffe4e6,#fdf2f8 60%,#fff); }
+  .setup { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px; background:linear-gradient(180deg,#ffe4e6,#fdf2f8 60%,#fff); }
   .setup .heart { font-size:40px; animation:beat 1.2s infinite; }
   @keyframes beat { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
   .setup h1 { font-size:28px; color:#e11d48; margin:8px 0 4px; }
@@ -110,6 +110,8 @@
   .setup .form { width:100%; max-width:20rem; }
   .setup label { display:block; font-size:14px; color:#f43f5e; margin:14px 0 6px; }
   .setup .btn-primary { margin-top:22px; }
+  .setup .divider { display:flex; align-items:center; gap:10px; color:#9ca3af; font-size:12px; margin:26px 0 14px; width:100%; max-width:20rem; }
+  .setup .divider::before, .setup .divider::after { content:''; flex:1; height:1px; background:#fecdd3; }
   .viewer { position:fixed; inset:0; z-index:60; background:rgba(0,0,0,.92); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:16px; }
   .viewer img { max-width:100%; max-height:70vh; border-radius:16px; object-fit:contain; }
   .viewer .cap { color:rgba(255,255,255,.9); margin-top:14px; font-size:14px; text-align:center; }
@@ -121,6 +123,9 @@
   #installBar .box { margin:10px; max-width:28rem; width:calc(100% - 20px); background:linear-gradient(90deg,#fb7185,#ec4899); color:#fff; border-radius:16px; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 8px 20px rgba(251,113,133,.4); font-size:14px; }
   #installBar button { border:none; border-radius:999px; background:#fff; color:#f43f5e; font-weight:600; padding:8px 16px; font-size:13px; cursor:pointer; flex-shrink:0; margin-left:10px; }
   #installBar .close { background:none; color:rgba(255,255,255,.8); padding:8px 4px; font-weight:400; }
+  /* 同步卡片 */
+  .sync-code { flex:1; background:#fff1f2; border-radius:14px; padding:12px; font-size:22px; font-weight:800; letter-spacing:6px; text-align:center; color:#e11d48; }
+  #syncDot { font-size:12px; color:#9ca3af; font-weight:400; }
 </style>
 </head>
 <body>
@@ -135,7 +140,8 @@ const K = {
   things: 'love.things', moods: 'love.moods', whispers: 'love.whispers', capsules: 'love.capsules'
 };
 const load = (k, fb) => { try { const r = localStorage.getItem(k); return r ? JSON.parse(r) : fb; } catch { return fb; } };
-const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { alert('存储空间不足，照片可能太多了'); } };
+const rawSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { alert('存储空间不足，照片可能太多了'); } };
+const save = (k, v) => { rawSet(k, v); markChanged(); };
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const todayStr = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 const fmtDate = iso => { const [y, m, d] = iso.split('-'); return `${y}年${+m}月${+d}日`; };
@@ -156,6 +162,8 @@ let S = {
   diaryTab: 'mood',
   viewing: null,
   opening: null,
+  joining: false,
+  joinFailed: false,
 };
 const P = () => S.profile;
 
@@ -170,6 +178,8 @@ const TABS = [
 
 function render() {
   const app = document.getElementById('app');
+  if (S.joining) { app.innerHTML = viewJoining(); return; }
+  if (S.joinFailed) { app.innerHTML = viewJoinFailed(); return; }
   if (!S.profile) { app.innerHTML = viewSetup(); return; }
   const cur = TABS.find(t => t[0] === S.tab);
   app.innerHTML = `<div class="wrap">
@@ -180,6 +190,7 @@ function render() {
         <span class="ico">${t[1]}</span><span>${t[2]}</span></button>`).join('')}
     </div></nav>
   </div>` + viewOverlays();
+  renderSyncDot();
 }
 
 function viewTab() {
@@ -208,6 +219,31 @@ function viewSetup() {
       <input type="date" id="sDate" value="${todayStr()}" max="${todayStr()}" />
       <button class="btn-primary" data-action="doSetup">开始我们的故事 ❤️</button>
     </div>
+    <div class="divider">另一半已经创建好了？</div>
+    <div class="form">
+      <input type="text" id="sJoinCode" placeholder="输入 TA 的配对码（6 位字母数字）" style="text-transform:uppercase" />
+      <button class="btn-primary" data-action="joinSpace" style="margin-top:12px;background:linear-gradient(90deg,#a78bfa,#e879f9)">加入我们的空间 💞</button>
+    </div>
+  </div>`;
+}
+
+function viewJoining() {
+  return `<div class="setup">
+    <div class="heart">💞</div>
+    <h1 style="font-size:22px">正在同步…</h1>
+    <p>正在从 TA 的手机获取你们的回忆，请稍等片刻</p>
+  </div>`;
+}
+
+function viewJoinFailed() {
+  return `<div class="setup">
+    <div class="heart">🥺</div>
+    <h1 style="font-size:22px">暂时没有同步到数据</h1>
+    <p style="line-height:1.8">请确认：<br/>1. 配对码没有输错<br/>2. TA 的手机上这个软件能正常打开<br/>3. 两台手机都连着网</p>
+    <div class="form">
+      <button class="btn-primary" data-action="retryJoin">重试同步</button>
+      <button class="btn-ghost" data-action="freshStart" style="margin-top:12px;margin-bottom:0">配对码搞错了？重新输入</button>
+    </div>
   </div>`;
 }
 
@@ -234,6 +270,14 @@ function viewHome() {
     <div class="days">${days}</div>
     <div class="sub">天</div>
     <div class="small">始于 ${fmtDate(p.startDate)}</div>
+  </div>
+  <div class="card">
+    <div class="sec-title"><h2>💞 情侣同步</h2><span id="syncDot">…</span></div>
+    <div style="font-size:13px;color:#6b7280;line-height:1.6;margin-bottom:10px">把配对码发给 TA，TA 在首次打开时输入，两部手机就能实时同步、一起编辑。</div>
+    <div style="display:flex;gap:8px;align-items:stretch">
+      <div class="sync-code">${esc(SYNC.code || '——————')}</div>
+      <button class="btn-primary" style="width:auto;padding:10px 18px;box-shadow:none" data-action="copyCode">复制</button>
+    </div>
   </div>
   ${miles.length ? `<div class="card">
     <div class="sec-title"><h2>✨ 即将到来的里程碑</h2></div>
@@ -348,7 +392,7 @@ function sheet(title, inner) {
 }
 function viewOverlays() {
   let out = '';
-  const p = P();
+  const p = P() || { name1: '', name2: '' };
   if (S.sheet === 'addAnni') out += sheet('添加纪念日', `
     <input type="text" id="fTitle" placeholder="比如：TA 的生日 / 第一次见面" />
     <input type="date" id="fDate" value="${todayStr()}" />
@@ -419,6 +463,195 @@ function viewOverlays() {
   return out;
 }
 
+/* ============ 实时同步（加密 + MQTT 公共频道） ============ */
+const SYNC = {
+  code: load('love.syncCode', null),
+  client: null, connected: false, gotRemote: false,
+  started: false, pubTimer: null, key: null, restoreMode: false,
+};
+const genCode = () => {
+  const chars = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+  let c = '';
+  const rnd = crypto.getRandomValues(new Uint8Array(6));
+  for (let i = 0; i < 6; i++) c += chars[rnd[i] % chars.length];
+  return c;
+};
+const syncBase = () => 'loveapp-sync-v1/' + SYNC.code;
+const localUpdatedAt = () => Number(localStorage.getItem('love.updatedAt') || 0);
+
+function collectState() {
+  return {
+    v: 1, updatedAt: localUpdatedAt(),
+    profile: load(K.profile, null),
+    anniversaries: load(K.anniversaries, []),
+    things: load(K.things, []),
+    moods: load(K.moods, []),
+    whispers: load(K.whispers, []),
+    capsules: load(K.capsules, []),
+    photosMeta: load(K.photos, []).map(p => ({ id: p.id, caption: p.caption, date: p.date })),
+  };
+}
+function applyState(st) {
+  const defs = { profile: null, anniversaries: [], things: [], moods: [], whispers: [], capsules: [] };
+  Object.keys(defs).forEach(k => {
+    const val = st[k] === undefined ? defs[k] : st[k];
+    rawSet(K[k], val);
+  });
+  localStorage.setItem('love.updatedAt', String(st.updatedAt || Date.now()));
+  const metaIds = new Set((st.photosMeta || []).map(m => m.id));
+  rawSet(K.photos, load(K.photos, []).filter(p => metaIds.has(p.id)));
+  S.profile = load(K.profile, null);
+}
+
+function markChanged() {
+  localStorage.setItem('love.updatedAt', String(Date.now()));
+  if (!SYNC.code) return;
+  clearTimeout(SYNC.pubTimer);
+  SYNC.pubTimer = setTimeout(publishState, 800);
+}
+
+/* 加解密：密钥由配对码推导，不知道配对码的人（包括服务器）看到的是密文 */
+async function syncKey() {
+  if (SYNC.key) return SYNC.key;
+  const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('love-sync-key:' + SYNC.code));
+  SYNC.key = await crypto.subtle.importKey('raw', h, 'AES-GCM', false, ['encrypt', 'decrypt']);
+  return SYNC.key;
+}
+function u8ToB64(u8) { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); }
+function b64ToU8(b) { const s = atob(b); const u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; }
+async function encText(text) {
+  const key = await syncKey();
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(text));
+  const out = new Uint8Array(12 + ct.byteLength);
+  out.set(iv); out.set(new Uint8Array(ct), 12);
+  return u8ToB64(out);
+}
+async function decText(b64) {
+  const key = await syncKey();
+  const u = b64ToU8(b64);
+  const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u.slice(0, 12) }, key, u.slice(12));
+  return new TextDecoder().decode(pt);
+}
+
+function pub(topic, payload) {
+  if (!SYNC.client || !SYNC.connected) return;
+  try { SYNC.client.publish(topic, payload, { retain: true }); } catch { /* 忽略 */ }
+}
+async function publishState() {
+  if (!SYNC.code) return;
+  const st = collectState();
+  if (!st.profile) return; // 空档案不发布，防止覆盖对方数据
+  try { pub(syncBase() + '/state', await encText(JSON.stringify(st))); } catch { /* 忽略 */ }
+}
+async function publishPhoto(p) {
+  if (!SYNC.code || !p) return;
+  try { pub(syncBase() + '/photo/' + p.id, await encText(p.dataUrl)); } catch { /* 忽略 */ }
+}
+function clearRemotePhoto(id) {
+  if (!SYNC.code) return;
+  pub(syncBase() + '/photo/' + id, ''); // 空消息 = 删除
+}
+function publishedIds() { return load('love.publishedPhotos', []); }
+async function publishNewPhotos(forceAll) {
+  const photos = load(K.photos, []);
+  const done = new Set(forceAll ? [] : publishedIds());
+  for (const p of photos) {
+    if (done.has(p.id)) continue;
+    await publishPhoto(p);
+    done.add(p.id);
+  }
+  rawSet('love.publishedPhotos', Array.from(done));
+}
+
+function renderSyncDot() {
+  const el = document.getElementById('syncDot');
+  if (!el) return;
+  if (!window.mqtt || !SYNC.started) el.textContent = '⚪ 同步服务连接中…';
+  else el.textContent = SYNC.connected ? '🟢 实时同步中' : '🔴 同步已断开（内容仍在，联网后自动恢复）';
+}
+
+window.__startSync = function () {
+  if (SYNC.started || !SYNC.code || !window.mqtt) return;
+  SYNC.started = true;
+  const brokers = ['wss://broker.emqx.io:8084/mqtt', 'wss://test.mosquitto.org:8081/mqtt'];
+  let bi = 0;
+  function connect() {
+    const url = brokers[bi % brokers.length]; bi++;
+    let c;
+    try {
+      c = window.mqtt.connect(url, {
+        clientId: 'love-' + Math.random().toString(36).slice(2, 12),
+        keepalive: 30, reconnectPeriod: 5000, connectTimeout: 10000, clean: true,
+      });
+    } catch { setTimeout(connect, 4000); return; }
+    SYNC.client = c;
+    c.on('connect', () => {
+      SYNC.connected = true; renderSyncDot();
+      c.subscribe([syncBase() + '/state', syncBase() + '/photo/+'], () => {
+        // 等 2.5 秒看云端有没有数据；没有就把本机数据发布上去（首次创建/云端数据丢失时恢复）
+        setTimeout(() => {
+          if (!SYNC.gotRemote && load(K.profile, null)) {
+            publishState();
+            publishNewPhotos(true);
+          }
+        }, 2500);
+      });
+    });
+    c.on('message', async (topic, buf) => {
+      try {
+        if (topic === syncBase() + '/state') {
+          const st = JSON.parse(await decText(buf.toString()));
+          if (!st || typeof st.updatedAt !== 'number') return;
+          SYNC.gotRemote = true;
+          if (st.updatedAt > localUpdatedAt()) {
+            applyState(st);
+            S.joining = false; S.joinFailed = false;
+            render();
+          } else if (st.updatedAt < localUpdatedAt() && load(K.profile, null)) {
+            publishState(); // 本机更新，把新数据推给 TA
+          }
+        } else if (topic.indexOf(syncBase() + '/photo/') === 0) {
+          const id = topic.slice((syncBase() + '/photo/').length);
+          const list = load(K.photos, []);
+          if (buf.length === 0) {
+            rawSet(K.photos, list.filter(p => p.id !== id));
+          } else {
+            const dataUrl = await decText(buf.toString());
+            const i = list.findIndex(p => p.id === id);
+            if (i >= 0) list[i].dataUrl = dataUrl;
+            else list.unshift({ id, dataUrl, caption: '', date: todayStr() });
+            rawSet(K.photos, list);
+            const done = new Set(publishedIds()); done.add(id); rawSet('love.publishedPhotos', Array.from(done));
+          }
+          if (S.profile && S.tab === 'album') render();
+        }
+      } catch { /* 解密失败的消息（不是我们的配对码）直接忽略 */ }
+    });
+    c.on('close', () => { SYNC.connected = false; renderSyncDot(); });
+    c.on('error', () => { try { c.end(true); } catch { /* 忽略 */ } if (!SYNC.connected) setTimeout(connect, 4000); });
+  }
+  connect();
+};
+
+/* 按需加载 MQTT 库（两个 CDN 互为备份；都失败也不影响本机使用） */
+(function loadMqtt() {
+  const urls = [
+    'https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js',
+    'https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js',
+  ];
+  let i = 0;
+  function next() {
+    if (i >= urls.length) { renderSyncDot(); return; }
+    const s = document.createElement('script');
+    s.src = urls[i++];
+    s.onload = () => { window.__startSync && window.__startSync(); renderSyncDot(); };
+    s.onerror = () => next();
+    document.head.appendChild(s);
+  }
+  next();
+})();
+
 /* ============ 交互 ============ */
 let pickedEmoji = '😍', pickedWho = '';
 const $ = id => document.getElementById(id);
@@ -428,10 +661,10 @@ document.addEventListener('click', e => {
   const stopEl = e.target.closest('[data-stop]');
   const el = e.target.closest('[data-action]');
   if (!el) return;
-  if (stopEl && !stopEl.contains(el)) return;
+  if (stopEl && !stopEl.contains(el)) return; // 点在内容区空白
   const a = el.dataset.action, v = el.dataset.v;
 
-  if (a === 'closeSheet' && stopEl && el.classList.contains('overlay')) return;
+  if (a === 'closeSheet' && stopEl && el.classList.contains('overlay')) return; // sheet 内部不关闭
   if (a === 'closeViewer' && stopEl && el.classList.contains('viewer')) return;
   if (a === 'closeOpening' && stopEl && el.classList.contains('overlay')) return;
 
@@ -454,10 +687,40 @@ document.addEventListener('click', e => {
     case 'doSetup': {
       const n1 = gv('sName1'), n2 = gv('sName2'), d = $('sDate').value;
       if (!n1 || !n2 || !d) { alert('把名字和日期都填上哦'); return; }
+      if (!SYNC.code) { SYNC.code = genCode(); rawSet('love.syncCode', SYNC.code); }
       S.profile = { name1: n1, name2: n2, startDate: d };
       save(K.profile, S.profile);
+      window.__startSync();
       render(); break;
     }
+    case 'joinSpace': {
+      const c = gv('sJoinCode').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (c.length < 4) { alert('配对码不对哦，找 TA 要一下（6 位字母数字）'); return; }
+      SYNC.code = c; rawSet('love.syncCode', c);
+      S.joining = true; S.joinFailed = false; render();
+      window.__startSync();
+      setTimeout(() => { if (S.joining && !S.profile) { S.joining = false; S.joinFailed = true; render(); } }, 12000);
+      break;
+    }
+    case 'retryJoin':
+      S.joinFailed = false; S.joining = true; render();
+      setTimeout(() => { if (S.joining && !S.profile) { S.joining = false; S.joinFailed = true; render(); } }, 12000);
+      break;
+    case 'freshStart':
+      localStorage.removeItem('love.syncCode'); SYNC.code = null;
+      S.joinFailed = false; S.joining = false; render();
+      break;
+    case 'copyCode': {
+      const code = SYNC.code || '';
+      const done2 = () => alert('配对码已复制，用微信发给 TA 吧 💌');
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(done2).catch(() => { prompt('长按复制配对码：', code); });
+      } else {
+        prompt('长按复制配对码：', code);
+      }
+      break;
+    }
+
     case 'saveAnni': {
       const t = gv('fTitle'), d = $('fDate').value;
       if (!t || !d) { alert('名称和日期都要填哦'); return; }
@@ -472,7 +735,9 @@ document.addEventListener('click', e => {
     case 'view': S.viewing = v; render(); break;
     case 'delPhoto':
       if (!confirm('确定删除这张照片吗？')) return;
-      save(K.photos, load(K.photos, []).filter(x => x.id !== v)); S.viewing = null; render(); break;
+      save(K.photos, load(K.photos, []).filter(x => x.id !== v));
+      clearRemotePhoto(v);
+      S.viewing = null; render(); break;
     case 'editCaption': S.sheet = 'caption'; S.captionId = v; render();
       { const ph = load(K.photos, []).find(x => x.id === v); if (ph) $('fCaption').value = ph.caption; } break;
     case 'saveCaption': {
@@ -539,13 +804,16 @@ $('fileInput').addEventListener('change', async e => {
   const files = Array.from(e.target.files || []).filter(f => f.type.startsWith('image/'));
   if (!files.length) return;
   const list = load(K.photos, []);
+  const added = [];
   for (const f of files) {
     try {
       const dataUrl = await compress(f);
-      list.unshift({ id: uid(), dataUrl, caption: '', date: todayStr() });
+      const p = { id: uid(), dataUrl, caption: '', date: todayStr() };
+      list.unshift(p); added.push(p);
     } catch { /* 跳过失败文件 */ }
   }
   save(K.photos, list);
+  added.forEach(p => publishPhoto(p));
   e.target.value = '';
   render();
 });
@@ -555,11 +823,11 @@ function compress(file) {
     r.onload = () => {
       const img = new Image();
       img.onload = () => {
-        const max = 900, sc = Math.min(1, max / Math.max(img.width, img.height));
+        const max = 800, sc = Math.min(1, max / Math.max(img.width, img.height));
         const c = document.createElement('canvas');
         c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
         c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-        res(c.toDataURL('image/jpeg', 0.75));
+        res(c.toDataURL('image/jpeg', 0.7));
       };
       img.onerror = rej; img.src = r.result;
     };
@@ -567,16 +835,24 @@ function compress(file) {
   });
 }
 
+/* 老用户升级：已有档案但还没有配对码的，自动生成一个 */
+if (S.profile && !SYNC.code) {
+  SYNC.code = genCode();
+  rawSet('love.syncCode', SYNC.code);
+}
+
 render();
+window.__startSync();
 
 /* ============ PWA：安装提示 + 离线缓存 ============ */
 (function () {
+  // 注册 Service Worker（离线可用）
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
   const bar = $('installBar'), tip = $('installTip'), btn = $('installBtn');
   const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-  if (standalone) return;
+  if (standalone) return; // 已经是 App 模式，不提示
   let deferred = null;
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
   const dismissed = localStorage.getItem('love.installDismiss');
@@ -591,10 +867,12 @@ render();
   });
 
   if (isIOS) {
+    // iPhone：必须用 Safari，手动添加
     tip.textContent = '📲 请用 Safari 打开本页 → 点底部「分享」→「添加到主屏幕」';
     btn.textContent = '知道了';
     bar.style.display = 'flex';
   } else {
+    // 安卓：等 3 秒，如果浏览器没有自动安装能力，就显示手动指引
     setTimeout(() => {
       if (!deferred) {
         tip.textContent = '📲 点浏览器菜单（右上角⋮或底部☰）→ 选「安装应用」或「添加到主屏幕」';
