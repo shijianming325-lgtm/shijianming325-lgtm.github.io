@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#fb7185" />
+<title>恋爱纪念册</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:linear-gradient(180deg,#fff1f2,#fdf2f8 50%,#fff1f2); min-height:100vh; color:#1f2937; }
+  .wrap { max-width:28rem; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; }
+  header { position:sticky; top:0; z-index:40; background:rgba(255,255,255,.85); backdrop-filter:blur(8px); border-bottom:1px solid #ffe4e6; padding:14px 20px; text-align:center; }
+  header h1 { font-size:18px; color:#e11d48; }
+  main { flex:1; padding:20px 16px 96px; }
+  nav { position:fixed; bottom:0; left:0; right:0; z-index:40; background:rgba(255,255,255,.95); backdrop-filter:blur(8px); border-top:1px solid #ffe4e6; }
+  nav .inner { max-width:28rem; margin:0 auto; display:grid; grid-template-columns:repeat(5,1fr); }
+  nav button { background:none; border:none; padding:10px 0; display:flex; flex-direction:column; align-items:center; gap:2px; color:#9ca3af; font-size:10px; cursor:pointer; }
+  nav button.on { color:#f43f5e; }
+  nav button .ico { font-size:20px; line-height:1; }
+  .card { background:#fff; border-radius:24px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,.06); margin-bottom:16px; }
+  .hero { background:linear-gradient(135deg,#fb7185,#f472b6,#f43f5e); color:#fff; text-align:center; border-radius:24px; padding:28px 20px; box-shadow:0 10px 25px rgba(251,113,133,.35); margin-bottom:16px; position:relative; overflow:hidden; }
+  .hero .days { font-size:56px; font-weight:800; margin:6px 0; }
+  .hero .sub { color:#ffe4e6; font-size:14px; }
+  .hero .small { color:rgba(255,228,230,.8); font-size:12px; margin-top:10px; }
+  .sec-title { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .sec-title h2 { font-size:16px; font-weight:600; }
+  .link-btn { background:none; border:none; color:#f43f5e; font-size:14px; font-weight:500; cursor:pointer; }
+  .row { display:flex; align-items:center; justify-content:space-between; background:#fff1f2; border-radius:16px; padding:12px 16px; margin-bottom:10px; }
+  .row .t { font-weight:500; font-size:14px; }
+  .row .d { font-size:12px; color:#9ca3af; margin-top:2px; }
+  .row .n { font-size:14px; font-weight:600; color:#6b7280; white-space:nowrap; }
+  .row .n.today { color:#f43f5e; }
+  .del { background:none; border:none; color:#d1d5db; font-size:16px; cursor:pointer; padding:4px; }
+  .empty { text-align:center; color:#9ca3af; font-size:14px; padding:20px 0; }
+  .btn-primary { width:100%; border:none; border-radius:16px; background:linear-gradient(90deg,#fb7185,#ec4899); color:#fff; font-weight:600; padding:14px; font-size:15px; cursor:pointer; box-shadow:0 4px 12px rgba(251,113,133,.3); }
+  .btn-primary:disabled { opacity:.4; }
+  .btn-primary:active { transform:scale(.97); }
+  .btn-ghost { width:100%; border:none; border-radius:16px; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.06); color:#f43f5e; font-weight:500; padding:12px; font-size:14px; cursor:pointer; margin-bottom:16px; }
+  input[type=text], input[type=date], textarea { width:100%; border:1px solid #fecdd3; border-radius:16px; padding:12px 16px; font-size:15px; outline:none; font-family:inherit; background:#fff; }
+  input:focus, textarea:focus { border-color:#fb7185; }
+  textarea { resize:none; }
+  .overlay { position:fixed; inset:0; z-index:50; background:rgba(0,0,0,.4); display:flex; align-items:flex-end; justify-content:center; }
+  .sheet { width:100%; max-width:28rem; background:#fff; border-radius:24px 24px 0 0; padding:24px; }
+  .sheet h3 { font-size:18px; font-weight:600; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; }
+  .sheet .x { background:none; border:none; color:#9ca3af; font-size:20px; cursor:pointer; }
+  .sheet > * + * { margin-top:14px; }
+  .checkline { display:flex; align-items:center; gap:8px; font-size:14px; color:#4b5563; }
+  .checkline input { width:16px; height:16px; accent-color:#f43f5e; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .photo-cell { border-radius:16px; overflow:hidden; background:#fff1f2; aspect-ratio:1; box-shadow:0 1px 3px rgba(0,0,0,.06); cursor:pointer; }
+  .photo-cell img { width:100%; height:100%; object-fit:cover; }
+  .photo-cap { font-size:12px; color:#4b5563; margin-top:4px; padding:0 4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .upload-box { width:100%; border:2px dashed #fda4af; border-radius:24px; background:#fff; padding:32px; color:#f43f5e; font-size:14px; font-weight:500; cursor:pointer; margin-bottom:16px; }
+  .todo { display:flex; align-items:flex-start; gap:12px; background:#fff; border-radius:16px; padding:16px; box-shadow:0 1px 3px rgba(0,0,0,.06); margin-bottom:10px; }
+  .todo.done { opacity:.6; }
+  .todo .circle { width:24px; height:24px; border-radius:50%; border:2px solid #fda4af; flex-shrink:0; margin-top:2px; background:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; }
+  .todo.done .circle { background:#f43f5e; border-color:#f43f5e; }
+  .todo .body { flex:1; min-width:0; }
+  .todo .title { font-weight:500; font-size:15px; }
+  .todo.done .title { text-decoration:line-through; color:#9ca3af; }
+  .todo .note { font-size:12px; color:#9ca3af; margin-top:2px; }
+  .todo .when { font-size:12px; color:#fb7185; margin-top:2px; }
+  .tabs2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; background:#fff; border-radius:16px; padding:6px; box-shadow:0 1px 3px rgba(0,0,0,.06); margin-bottom:16px; }
+  .tabs2 button { border:none; border-radius:12px; padding:10px; font-size:14px; font-weight:500; color:#6b7280; background:none; cursor:pointer; }
+  .tabs2 button.on { background:linear-gradient(90deg,#fb7185,#ec4899); color:#fff; }
+  .mood { display:flex; align-items:flex-start; gap:12px; background:#fff; border-radius:16px; padding:16px; box-shadow:0 1px 3px rgba(0,0,0,.06); margin-bottom:10px; }
+  .mood .emo { font-size:28px; }
+  .mood .who { font-size:14px; font-weight:600; color:#f43f5e; }
+  .mood .date { font-size:12px; color:#9ca3af; margin-left:8px; font-weight:400; }
+  .mood .txt { font-size:14px; color:#374151; margin-top:4px; }
+  .whisper { background:linear-gradient(135deg,#fff1f2,#fdf2f8); border:1px solid #ffe4e6; border-radius:16px; padding:16px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.05); }
+  .whisper .meta { display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px; }
+  .whisper .who { color:#f43f5e; font-weight:600; }
+  .whisper .date { color:#9ca3af; }
+  .whisper .txt { font-size:14px; color:#374151; line-height:1.6; }
+  .emoji-row { display:flex; gap:8px; flex-wrap:wrap; }
+  .emoji-row button { font-size:22px; width:44px; height:44px; border-radius:16px; border:none; background:#f9fafb; cursor:pointer; }
+  .emoji-row button.on { background:#ffe4e6; box-shadow:0 0 0 2px #fb7185; transform:scale(1.1); }
+  .who-row { display:flex; gap:8px; }
+  .who-row button { flex:1; border:none; border-radius:12px; padding:10px; font-size:14px; font-weight:500; background:#fff1f2; color:#f43f5e; cursor:pointer; }
+  .who-row button.on { background:#f43f5e; color:#fff; }
+  .capsule-hero { background:linear-gradient(90deg,#a78bfa,#e879f9); color:#fff; border-radius:24px; padding:20px; box-shadow:0 10px 25px rgba(232,121,249,.3); margin-bottom:16px; }
+  .capsule-hero .sub { color:#fae8ff; font-size:14px; }
+  .capsule-hero .big { font-size:18px; font-weight:700; margin-top:4px; }
+  .cap-item { background:#fff; border-radius:16px; padding:16px; box-shadow:0 1px 3px rgba(0,0,0,.06); margin-bottom:12px; }
+  .cap-head { display:flex; align-items:center; justify-content:space-between; }
+  .cap-left { display:flex; align-items:center; gap:12px; }
+  .cap-ico { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; background:#f3f4f6; }
+  .cap-ico.ready { background:#fef3c7; }
+  .cap-ico.open { background:#fae8ff; }
+  .cap-st { font-weight:500; font-size:14px; }
+  .cap-dates { font-size:12px; color:#9ca3af; margin-top:2px; }
+  .cap-text { margin-top:12px; background:#fdf4ff; border:1px solid #fae8ff; border-radius:12px; padding:12px; font-size:14px; color:#374151; line-height:1.6; }
+  .btn-open { margin-top:12px; width:100%; border:none; border-radius:12px; background:linear-gradient(90deg,#fbbf24,#fb923c); color:#fff; font-weight:600; padding:10px; font-size:14px; cursor:pointer; }
+  .btn-fuchsia { width:100%; border:none; border-radius:16px; background:linear-gradient(90deg,#a78bfa,#e879f9); color:#fff; font-weight:600; padding:14px; font-size:15px; cursor:pointer; }
+  .btn-fuchsia:disabled { opacity:.4; }
+  .setup { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 32px; background:linear-gradient(180deg,#ffe4e6,#fdf2f8 60%,#fff); }
+  .setup .heart { font-size:40px; animation:beat 1.2s infinite; }
+  @keyframes beat { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
+  .setup h1 { font-size:28px; color:#e11d48; margin:8px 0 4px; }
+  .setup p { color:#fb7185; font-size:14px; margin-bottom:28px; }
+  .setup .form { width:100%; max-width:20rem; }
+  .setup label { display:block; font-size:14px; color:#f43f5e; margin:14px 0 6px; }
+  .setup .btn-primary { margin-top:22px; }
+  .viewer { position:fixed; inset:0; z-index:60; background:rgba(0,0,0,.92); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:16px; }
+  .viewer img { max-width:100%; max-height:70vh; border-radius:16px; object-fit:contain; }
+  .viewer .cap { color:rgba(255,255,255,.9); margin-top:14px; font-size:14px; text-align:center; }
+  .viewer .acts { display:flex; gap:12px; margin-top:14px; }
+  .viewer .acts button { border:none; border-radius:999px; padding:8px 20px; font-size:14px; cursor:pointer; background:rgba(255,255,255,.2); color:#fff; }
+  .viewer .acts button.danger { background:rgba(244,63,94,.8); }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<input type="file" id="fileInput" accept="image/*" multiple style="display:none" />
+<script>
+"use strict";
+const K = {
+  profile: 'love.profile', anniversaries: 'love.anniversaries', photos: 'love.photos',
+  things: 'love.things', moods: 'love.moods', whispers: 'love.whispers', capsules: 'love.capsules'
+};
+const load = (k, fb) => { try { const r = localStorage.getItem(k); return r ? JSON.parse(r) : fb; } catch { return fb; } };
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { alert('存储空间不足，照片可能太多了'); } };
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const todayStr = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const fmtDate = iso => { const [y, m, d] = iso.split('-'); return `${y}年${+m}月${+d}日`; };
+const daysBetween = (a, b) => Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000);
+function nextOccurrence(date, yearly) {
+  const today = new Date(todayStr() + 'T00:00:00');
+  const [y0, m, d] = date.split('-').map(Number);
+  let t = yearly ? new Date(today.getFullYear(), m - 1, d) : new Date(y0, m - 1, d);
+  if (yearly && t < today) t = new Date(today.getFullYear() + 1, m - 1, d);
+  return Math.round((t - today) / 86400000);
+}
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+let S = {
+  profile: load(K.profile, null),
+  tab: 'home',
+  sheet: null,
+  diaryTab: 'mood',
+  viewing: null,
+  opening: null,
+};
+const P = () => S.profile;
+
+const TABS = [
+  ['home', '💗', '首页', '恋爱纪念册'],
+  ['album', '🖼️', '相册', '共同相册'],
+  ['things', '✅', '清单', '一起完成的事'],
+  ['diary', '📖', '日记', '心情与悄悄话'],
+  ['capsule', '⏳', '胶囊', '时光胶囊'],
+];
+
+function render() {
+  const app = document.getElementById('app');
+  if (!S.profile) { app.innerHTML = viewSetup(); return; }
+  const cur = TABS.find(t => t[0] === S.tab);
+  app.innerHTML = `<div class="wrap">
+    <header><h1>${cur[3]}</h1></header>
+    <main>${viewTab()}</main>
+    <nav><div class="inner">${TABS.map(t =>
+      `<button class="${S.tab === t[0] ? 'on' : ''}" data-action="tab" data-v="${t[0]}">
+        <span class="ico">${t[1]}</span><span>${t[2]}</span></button>`).join('')}
+    </div></nav>
+  </div>` + viewOverlays();
+}
+
+function viewTab() {
+  switch (S.tab) {
+    case 'home': return viewHome();
+    case 'album': return viewAlbum();
+    case 'things': return viewThings();
+    case 'diary': return viewDiary();
+    case 'capsule': return viewCapsule();
+  }
+  return '';
+}
+
+function viewSetup() {
+  return `<div class="setup">
+    <div class="heart">❤️</div>
+    <h1>恋爱纪念册</h1>
+    <p>先认识一下你们吧 💕</p>
+    <div class="form">
+      <label>你的名字</label>
+      <input type="text" id="sName1" placeholder="比如：小明" />
+      <label>TA 的名字</label>
+      <input type="text" id="sName2" placeholder="比如：小红" />
+      <label>我们在一起的日子</label>
+      <input type="date" id="sDate" value="${todayStr()}" max="${todayStr()}" />
+      <button class="btn-primary" data-action="doSetup">开始我们的故事 ❤️</button>
+    </div>
+  </div>`;
+}
+
+function viewHome() {
+  const p = P();
+  const days = daysBetween(p.startDate, todayStr()) + 1;
+  const targets = [100, 200, 365, 520, 730, 1000, 1314, 2000];
+  const start = new Date(p.startDate + 'T00:00:00');
+  const miles = targets.map(n => {
+    const d = new Date(start.getTime() + (n - 1) * 86400000);
+    const iso = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    return { n, left: daysBetween(todayStr(), iso) };
+  }).filter(m => m.left >= 0).slice(0, 3);
+
+  const annis = load(K.anniversaries, [])
+    .map(a => ({ ...a, left: nextOccurrence(a.date, a.yearly) }))
+    .sort((a, b) => a.left - b.left);
+
+  return `
+  <div class="hero">
+    <div class="sub">${esc(p.name1)} ❤ ${esc(p.name2)}</div>
+    <div class="sub" style="margin-top:8px">我们已经在一起</div>
+    <div class="days">${days}</div>
+    <div class="sub">天</div>
+    <div class="small">始于 ${fmtDate(p.startDate)}</div>
+  </div>
+  ${miles.length ? `<div class="card">
+    <div class="sec-title"><h2>✨ 即将到来的里程碑</h2></div>
+    ${miles.map(m => `<div style="display:flex;justify-content:space-between;font-size:14px;padding:5px 0">
+      <span style="color:#4b5563">在一起 ${m.n} 天</span>
+      <span style="color:${m.left === 0 ? '#f43f5e' : '#9ca3af'};font-weight:${m.left === 0 ? 600 : 400}">
+        ${m.left === 0 ? '就是今天！🎉' : '还有 ' + m.left + ' 天'}</span>
+    </div>`).join('')}
+  </div>` : ''}
+  <div class="card">
+    <div class="sec-title"><h2>🔔 纪念日提醒</h2>
+      <button class="link-btn" data-action="sheet" data-v="addAnni">＋ 添加</button></div>
+    ${annis.length === 0 ? '<div class="empty">还没有纪念日，点「添加」记下 TA 的生日、第一次见面……</div>' :
+      annis.map(a => `<div class="row">
+        <div><div class="t">${esc(a.title)}</div>
+          <div class="d">${fmtDate(a.date)}${a.yearly ? ' · 每年' : ''}</div></div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="n ${a.left === 0 ? 'today' : ''}">${a.left === 0 ? '就是今天 🎉' : a.left + ' 天后'}</span>
+          <button class="del" data-action="delAnni" data-v="${a.id}">🗑</button>
+        </div></div>`).join('')}
+  </div>`;
+}
+
+function viewAlbum() {
+  const photos = load(K.photos, []);
+  return `
+  <button class="upload-box" data-action="upload">📷<br/>点这里上传你们的照片</button>
+  ${photos.length === 0 ? '<div class="empty">相册还是空的，传第一张合照吧 📷</div>' :
+    '<div class="grid2">' + photos.map(ph => `
+      <div><div class="photo-cell" data-action="view" data-v="${ph.id}"><img src="${ph.dataUrl}" alt=""/></div>
+      ${ph.caption ? `<div class="photo-cap">${esc(ph.caption)}</div>` : ''}</div>`).join('') + '</div>'}`;
+}
+
+function viewThings() {
+  const things = load(K.things, []);
+  const done = things.filter(t => t.done).length;
+  return `
+  <div class="hero" style="padding:20px">
+    <div class="sub">一起完成的事</div>
+    <div style="font-size:26px;font-weight:800;margin-top:4px">${done} <span style="font-size:15px;font-weight:400;color:#ffe4e6">/ ${things.length} 件</span></div>
+  </div>
+  <button class="btn-ghost" data-action="sheet" data-v="addThing">＋ 想一起做的事</button>
+  ${things.length === 0 ? '<div class="empty">写下想一起完成的事吧：一起看日出、去迪士尼、做一顿饭……</div>' :
+    things.map(t => `<div class="todo ${t.done ? 'done' : ''}">
+      <button class="circle" data-action="toggleThing" data-v="${t.id}">${t.done ? '✓' : ''}</button>
+      <div class="body"><div class="title">${esc(t.title)}</div>
+        ${t.note ? `<div class="note">${esc(t.note)}</div>` : ''}
+        ${t.done && t.doneDate ? `<div class="when">✓ 完成于 ${fmtDate(t.doneDate)}</div>` : ''}</div>
+      <button class="del" data-action="delThing" data-v="${t.id}">🗑</button>
+    </div>`).join('')}`;
+}
+
+const EMOJIS = ['😍', '🥰', '😊', '🙂', '😐', '😢', '😠', '🥱'];
+function viewDiary() {
+  if (S.diaryTab === 'mood') {
+    const moods = load(K.moods, []);
+    var body = `<button class="btn-ghost" data-action="sheet" data-v="addMood">＋ 记录今天的心情</button>` +
+      (moods.length === 0 ? '<div class="empty">今天心情怎么样？记下来给 TA 看 🌈</div>' :
+        moods.map(m => `<div class="mood"><span class="emo">${m.emoji}</span>
+          <div class="body"><span class="who">${esc(m.author)}</span><span class="date">${fmtDate(m.date)}</span>
+          ${m.note ? `<div class="txt">${esc(m.note)}</div>` : ''}</div>
+          <button class="del" data-action="delMood" data-v="${m.id}">🗑</button></div>`).join(''));
+  } else {
+    const ws = load(K.whispers, []);
+    var body = `<button class="btn-ghost" data-action="sheet" data-v="addWhisper">＋ 说一句悄悄话</button>` +
+      (ws.length === 0 ? '<div class="empty">有些话当面不好意思说？写在这里 💌</div>' :
+        ws.map(w => `<div class="whisper">
+          <div class="meta"><span class="who">${esc(w.author)} 的悄悄话</span>
+            <span><span class="date">${fmtDate(w.date)}</span>
+            <button class="del" data-action="delWhisper" data-v="${w.id}">🗑</button></span></div>
+          <div class="txt">${esc(w.text)}</div></div>`).join(''));
+  }
+  return `<div class="tabs2">
+    <button class="${S.diaryTab === 'mood' ? 'on' : ''}" data-action="diaryTab" data-v="mood">🌈 心情日记</button>
+    <button class="${S.diaryTab === 'whisper' ? 'on' : ''}" data-action="diaryTab" data-v="whisper">💌 悄悄话</button>
+  </div>${body}`;
+}
+
+function viewCapsule() {
+  const caps = load(K.capsules, []).slice().sort((a, b) => a.openDate.localeCompare(b.openDate));
+  return `
+  <div class="capsule-hero"><div class="sub">⏳ 时光胶囊</div><div class="big">写封信，寄给未来的我们</div></div>
+  <button class="btn-ghost" style="color:#d946ef" data-action="sheet" data-v="addCapsule">＋ 埋一颗时光胶囊</button>
+  ${caps.length === 0 ? '<div class="empty">写下现在想对未来的 TA 说的话，到那天才能打开 ⏳</div>' :
+    caps.map(c => {
+      const left = daysBetween(todayStr(), c.openDate);
+      const ready = left <= 0;
+      return `<div class="cap-item"><div class="cap-head"><div class="cap-left">
+        <div class="cap-ico ${c.opened ? 'open' : ready ? 'ready' : ''}">${c.opened ? '🔓' : '🔒'}</div>
+        <div><div class="cap-st">${c.opened ? '已开启的胶囊' : ready ? '可以开启了！' : '还有 ' + left + ' 天开启'}</div>
+        <div class="cap-dates">封存于 ${fmtDate(c.createdAt)} · ${fmtDate(c.openDate)} 开启</div></div></div>
+        <button class="del" data-action="delCapsule" data-v="${c.id}">🗑</button></div>
+        ${c.opened ? `<div class="cap-text">${esc(c.text)}</div>` :
+          ready ? `<button class="btn-open" data-action="openCapsule" data-v="${c.id}">🔓 开启胶囊</button>` : ''}
+      </div>`;
+    }).join('')}`;
+}
+
+function sheet(title, inner) {
+  return `<div class="overlay" data-action="closeSheet"><div class="sheet" data-stop="1">
+    <h3>${title}<button class="x" data-action="closeSheet">✕</button></h3>${inner}</div></div>`;
+}
+function viewOverlays() {
+  let out = '';
+  const p = P();
+  if (S.sheet === 'addAnni') out += sheet('添加纪念日', `
+    <input type="text" id="fTitle" placeholder="比如：TA 的生日 / 第一次见面" />
+    <input type="date" id="fDate" value="${todayStr()}" />
+    <label class="checkline"><input type="checkbox" id="fYearly" checked /> 每年重复（生日、周年纪念日都选这个）</label>
+    <button class="btn-primary" data-action="saveAnni">保存</button>`);
+  if (S.sheet === 'addThing') out += sheet('想一起做的事', `
+    <input type="text" id="fTitle" placeholder="比如：一起看一次日出" />
+    <input type="text" id="fNote" placeholder="备注（可选）" />
+    <button class="btn-primary" data-action="saveThing">加入清单</button>`);
+  if (S.sheet === 'addMood') out += sheet('今天的心情', `
+    <div class="emoji-row" id="fEmojiRow">${EMOJIS.map((e, i) =>
+      `<button class="${i === 0 ? 'on' : ''}" data-action="pickEmoji" data-v="${e}">${e}</button>`).join('')}</div>
+    <div class="who-row" id="fWhoRow">
+      <button class="on" data-action="pickWho" data-v="${esc(p.name1)}">${esc(p.name1)}</button>
+      <button data-action="pickWho" data-v="${esc(p.name2)}">${esc(p.name2)}</button></div>
+    <input type="text" id="fNote" placeholder="想记点什么？（可选）" />
+    <button class="btn-primary" data-action="saveMood">记录</button>`);
+  if (S.sheet === 'addWhisper') out += sheet('写一句悄悄话', `
+    <div class="who-row" id="fWhoRow">
+      <button class="on" data-action="pickWho" data-v="${esc(p.name1)}">我是 ${esc(p.name1)}</button>
+      <button data-action="pickWho" data-v="${esc(p.name2)}">我是 ${esc(p.name2)}</button></div>
+    <textarea id="fText" rows="3" placeholder="悄悄说给 TA 听……"></textarea>
+    <button class="btn-primary" data-action="saveWhisper">放进心口袋 💌</button>`);
+  if (S.sheet === 'addCapsule') {
+    const t = new Date(); t.setDate(t.getDate() + 1);
+    const min = t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
+    out += sheet('埋一颗时光胶囊', `
+    <textarea id="fText" rows="4" placeholder="想对未来的我们说……"></textarea>
+    <div><label style="font-size:14px;color:#6b7280;display:block;margin-bottom:6px">开启日期</label>
+    <input type="date" id="fDate" min="${min}" value="${min}" /></div>
+    <button class="btn-fuchsia" data-action="saveCapsule">封存 💫</button>`);
+  }
+  if (S.sheet === 'caption') out += sheet('照片描述', `
+    <input type="text" id="fCaption" placeholder="比如：第一次一起看海 🌊" />
+    <button class="btn-primary" data-action="saveCaption">保存</button>`);
+
+  if (S.viewing) {
+    const ph = load(K.photos, []).find(x => x.id === S.viewing);
+    if (ph) out += `<div class="viewer" data-action="closeViewer">
+      <img src="${ph.dataUrl}" data-stop="1" alt=""/>
+      <div class="cap">${esc(ph.caption || fmtDate(ph.date))}</div>
+      <div class="acts" data-stop="1">
+        <button data-action="editCaption" data-v="${ph.id}">${ph.caption ? '修改描述' : '添加描述'}</button>
+        <button class="danger" data-action="delPhoto" data-v="${ph.id}">删除</button>
+        <button data-action="closeViewer">关闭</button>
+      </div></div>`;
+  }
+  if (S.opening) {
+    const c = load(K.capsules, []).find(x => x.id === S.opening);
+    if (c) out += `<div class="overlay" style="align-items:center;background:rgba(0,0,0,.6)" data-action="closeOpening">
+      <div class="sheet" data-stop="1" style="border-radius:24px;background:linear-gradient(180deg,#fffbeb,#fff);max-width:22rem">
+        <div style="text-align:center;font-size:36px">💌</div>
+        <div style="text-align:center;font-size:12px;color:#9ca3af;margin:8px 0 12px">这封信写于 ${fmtDate(c.createdAt)}</div>
+        <div style="font-size:14px;color:#374151;line-height:1.7">${esc(c.text)}</div>
+        <button class="btn-open" data-action="closeOpening">收好啦 ❤️</button>
+      </div></div>`;
+  }
+  return out;
+}
+
+let pickedEmoji = '😍', pickedWho = '';
+const $ = id => document.getElementById(id);
+const gv = id => { const el = $(id); return el ? el.value.trim() : ''; };
+
+document.addEventListener('click', e => {
+  const stopEl = e.target.closest('[data-stop]');
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  if (stopEl && !stopEl.contains(el)) return;
+  const a = el.dataset.action, v = el.dataset.v;
+
+  if (a === 'closeSheet' && stopEl && el.classList.contains('overlay')) return;
+  if (a === 'closeViewer' && stopEl && el.classList.contains('viewer')) return;
+  if (a === 'closeOpening' && stopEl && el.classList.contains('overlay')) return;
+
+  switch (a) {
+    case 'tab': S.tab = v; S.sheet = null; render(); break;
+    case 'sheet': S.sheet = v; render(); break;
+    case 'closeSheet': S.sheet = null; render(); break;
+    case 'closeViewer': S.viewing = null; render(); break;
+    case 'closeOpening': S.opening = null; render(); break;
+    case 'diaryTab': S.diaryTab = v; render(); break;
+    case 'pickEmoji':
+      pickedEmoji = v;
+      document.querySelectorAll('#fEmojiRow button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+      break;
+    case 'pickWho':
+      pickedWho = v;
+      el.parentElement.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === el));
+      break;
+
+    case 'doSetup': {
+      const n1 = gv('sName1'), n2 = gv('sName2'), d = $('sDate').value;
+      if (!n1 || !n2 || !d) { alert('把名字和日期都填上哦'); return; }
+      S.profile = { name1: n1, name2: n2, startDate: d };
+      save(K.profile, S.profile);
+      render(); break;
+    }
+    case 'saveAnni': {
+      const t = gv('fTitle'), d = $('fDate').value;
+      if (!t || !d) { alert('名称和日期都要填哦'); return; }
+      const list = load(K.anniversaries, []);
+      list.push({ id: uid(), title: t, date: d, yearly: $('fYearly').checked });
+      save(K.anniversaries, list); S.sheet = null; render(); break;
+    }
+    case 'delAnni':
+      save(K.anniversaries, load(K.anniversaries, []).filter(x => x.id !== v)); render(); break;
+
+    case 'upload': $('fileInput').click(); break;
+    case 'view': S.viewing = v; render(); break;
+    case 'delPhoto':
+      if (!confirm('确定删除这张照片吗？')) return;
+      save(K.photos, load(K.photos, []).filter(x => x.id !== v)); S.viewing = null; render(); break;
+    case 'editCaption': S.sheet = 'caption'; S.captionId = v; render();
+      { const ph = load(K.photos, []).find(x => x.id === v); if (ph) $('fCaption').value = ph.caption; } break;
+    case 'saveCaption': {
+      const list = load(K.photos, []);
+      const ph = list.find(x => x.id === S.captionId);
+      if (ph) ph.caption = gv('fCaption');
+      save(K.photos, list); S.sheet = null; render(); break;
+    }
+
+    case 'saveThing': {
+      const t = gv('fTitle');
+      if (!t) { alert('先写点内容哦'); return; }
+      const list = load(K.things, []);
+      list.unshift({ id: uid(), title: t, note: gv('fNote'), done: false });
+      save(K.things, list); S.sheet = null; render(); break;
+    }
+    case 'toggleThing': {
+      const list = load(K.things, []);
+      const t = list.find(x => x.id === v);
+      if (t) { t.done = !t.done; t.doneDate = t.done ? todayStr() : undefined; }
+      save(K.things, list); render(); break;
+    }
+    case 'delThing':
+      save(K.things, load(K.things, []).filter(x => x.id !== v)); render(); break;
+
+    case 'saveMood': {
+      const list = load(K.moods, []);
+      list.unshift({ id: uid(), date: todayStr(), emoji: pickedEmoji, note: gv('fNote'), author: pickedWho || P().name1 });
+      save(K.moods, list); S.sheet = null; pickedEmoji = '😍'; render(); break;
+    }
+    case 'delMood':
+      save(K.moods, load(K.moods, []).filter(x => x.id !== v)); render(); break;
+    case 'saveWhisper': {
+      const t = gv('fText');
+      if (!t) { alert('悄悄话不能是空的哦'); return; }
+      const list = load(K.whispers, []);
+      list.unshift({ id: uid(), text: t, author: pickedWho || P().name1, date: todayStr() });
+      save(K.whispers, list); S.sheet = null; render(); break;
+    }
+    case 'delWhisper':
+      save(K.whispers, load(K.whispers, []).filter(x => x.id !== v)); render(); break;
+
+    case 'saveCapsule': {
+      const t = gv('fText'), d = $('fDate').value;
+      if (!t || !d) { alert('内容和开启日期都要填哦'); return; }
+      const list = load(K.capsules, []);
+      list.push({ id: uid(), text: t, openDate: d, createdAt: todayStr(), opened: false });
+      save(K.capsules, list); S.sheet = null; render(); break;
+    }
+    case 'openCapsule': {
+      const list = load(K.capsules, []);
+      const c = list.find(x => x.id === v);
+      if (c) c.opened = true;
+      save(K.capsules, list); S.opening = v; render(); break;
+    }
+    case 'delCapsule':
+      if (!confirm('确定删除这颗胶囊吗？')) return;
+      save(K.capsules, load(K.capsules, []).filter(x => x.id !== v)); render(); break;
+  }
+});
+
+$('fileInput').addEventListener('change', async e => {
+  const files = Array.from(e.target.files || []).filter(f => f.type.startsWith('image/'));
+  if (!files.length) return;
+  const list = load(K.photos, []);
+  for (const f of files) {
+    try {
+      const dataUrl = await compress(f);
+      list.unshift({ id: uid(), dataUrl, caption: '', date: todayStr() });
+    } catch { }
+  }
+  save(K.photos, list);
+  e.target.value = '';
+  render();
+});
+function compress(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const max = 900, sc = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        res(c.toDataURL('image/jpeg', 0.75));
+      };
+      img.onerror = rej; img.src = r.result;
+    };
+    r.onerror = rej; r.readAsDataURL(file);
+  });
+}
+
+render();
+</script>
+</body>
+</html>
