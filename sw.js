@@ -1,4 +1,4 @@
-const CACHE = 'love-v2';
+const CACHE = 'love-v3';
 const ASSETS = ['./', './index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
