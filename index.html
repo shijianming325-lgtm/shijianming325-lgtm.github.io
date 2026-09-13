@@ -101,7 +101,6 @@
   .btn-open { margin-top:12px; width:100%; border:none; border-radius:12px; background:linear-gradient(90deg,#fbbf24,#fb923c); color:#fff; font-weight:600; padding:10px; font-size:14px; cursor:pointer; }
   .btn-fuchsia { width:100%; border:none; border-radius:16px; background:linear-gradient(90deg,#a78bfa,#e879f9); color:#fff; font-weight:600; padding:14px; font-size:15px; cursor:pointer; }
   .btn-fuchsia:disabled { opacity:.4; }
-  /* 设置页 */
   .setup { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px; background:linear-gradient(180deg,#ffe4e6,#fdf2f8 60%,#fff); }
   .setup .heart { font-size:40px; animation:beat 1.2s infinite; }
   @keyframes beat { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
@@ -118,12 +117,10 @@
   .viewer .acts { display:flex; gap:12px; margin-top:14px; }
   .viewer .acts button { border:none; border-radius:999px; padding:8px 20px; font-size:14px; cursor:pointer; background:rgba(255,255,255,.2); color:#fff; }
   .viewer .acts button.danger { background:rgba(244,63,94,.8); }
-  /* 安装提示条 */
   #installBar { position:fixed; top:0; left:0; right:0; z-index:70; display:none; justify-content:center; }
   #installBar .box { margin:10px; max-width:28rem; width:calc(100% - 20px); background:linear-gradient(90deg,#fb7185,#ec4899); color:#fff; border-radius:16px; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 8px 20px rgba(251,113,133,.4); font-size:14px; }
   #installBar button { border:none; border-radius:999px; background:#fff; color:#f43f5e; font-weight:600; padding:8px 16px; font-size:13px; cursor:pointer; flex-shrink:0; margin-left:10px; }
   #installBar .close { background:none; color:rgba(255,255,255,.8); padding:8px 4px; font-weight:400; }
-  /* 同步卡片 */
   .sync-code { flex:1; background:#fff1f2; border-radius:14px; padding:12px; font-size:22px; font-weight:800; letter-spacing:6px; text-align:center; color:#e11d48; }
   #syncDot { font-size:12px; color:#9ca3af; font-weight:400; }
 </style>
@@ -231,7 +228,7 @@ function viewJoining() {
   return `<div class="setup">
     <div class="heart">💞</div>
     <h1 style="font-size:22px">正在同步…</h1>
-    <p>正在从 TA 的手机获取你们的回忆，请稍等片刻</p>
+    <p>正在从你们的专属云空间获取回忆，第一次同步需要几秒钟</p>
   </div>`;
 }
 
@@ -239,7 +236,7 @@ function viewJoinFailed() {
   return `<div class="setup">
     <div class="heart">🥺</div>
     <h1 style="font-size:22px">暂时没有同步到数据</h1>
-    <p style="line-height:1.8">请确认：<br/>1. 配对码没有输错<br/>2. TA 的手机上这个软件能正常打开<br/>3. 两台手机都连着网</p>
+    <p style="line-height:1.8">请确认：<br/>1. 配对码没有输错（也可以让 TA 重新发一次邀请链接，点开就能配对）<br/>2. 手机连着网<br/>3. TA 已经创建好了你们的空间</p>
     <div class="form">
       <button class="btn-primary" data-action="retryJoin">重试同步</button>
       <button class="btn-ghost" data-action="freshStart" style="margin-top:12px;margin-bottom:0">配对码搞错了？重新输入</button>
@@ -273,11 +270,10 @@ function viewHome() {
   </div>
   <div class="card">
     <div class="sec-title"><h2>💞 情侣同步</h2><span id="syncDot">…</span></div>
-    <div style="font-size:13px;color:#6b7280;line-height:1.6;margin-bottom:10px">把配对码发给 TA，TA 在首次打开时输入，两部手机就能实时同步、一起编辑。</div>
-    <div style="display:flex;gap:8px;align-items:stretch">
-      <div class="sync-code">${esc(SYNC.code || '——————')}</div>
-      <button class="btn-primary" style="width:auto;padding:10px 18px;box-shadow:none" data-action="copyCode">复制</button>
-    </div>
+    <div style="font-size:13px;color:#6b7280;line-height:1.6;margin-bottom:10px">点「邀请 TA」，把链接用微信发给另一半，TA 点开就自动配对，不用输码。之后两部手机实时同步、一起编辑。</div>
+    <button class="btn-primary" data-action="copyInvite" style="margin-bottom:10px">🔗 邀请 TA（复制邀请链接）</button>
+    <div style="font-size:12px;color:#9ca3af;text-align:center;line-height:1.8">TA 也可以手动输入配对码：<b style="color:#e11d48;letter-spacing:3px;font-size:16px">${esc(SYNC.code || '')}</b>
+      <button class="link-btn" data-action="copyCode" style="margin-left:6px">复制</button></div>
   </div>
   ${miles.length ? `<div class="card">
     <div class="sec-title"><h2>✨ 即将到来的里程碑</h2></div>
@@ -463,11 +459,16 @@ function viewOverlays() {
   return out;
 }
 
-/* ============ 实时同步（加密 + MQTT 公共频道） ============ */
+/* ============ 实时同步（专属云空间 + 端到端加密） ============ */
+/* 云端只保存密文：内容在手机上用配对码生成的密钥加密后才上传，别人（包括服务器）都看不到明文 */
+const SUPA = {
+  url: 'https://ddjiwhdrojjbwccswipp.supabase.co',
+  key: 'sb_publishable_lf-sTaM9hy57p5ktWhYDmQ_Ju0Hs9ST',
+};
 const SYNC = {
   code: load('love.syncCode', null),
-  client: null, connected: false, gotRemote: false,
-  started: false, pubTimer: null, key: null, restoreMode: false,
+  connected: false, gotRemote: false, started: false, polling: false,
+  pubTimer: null, pollTimer: null, key: null, lastMeta: [],
 };
 const genCode = () => {
   const chars = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
@@ -476,8 +477,8 @@ const genCode = () => {
   for (let i = 0; i < 6; i++) c += chars[rnd[i] % chars.length];
   return c;
 };
-const syncBase = () => 'loveapp-sync-v1/' + SYNC.code;
 const localUpdatedAt = () => Number(localStorage.getItem('love.updatedAt') || 0);
+const photoRowId = pid => SYNC.code + '#photo#' + pid;
 
 function collectState() {
   return {
@@ -498,8 +499,18 @@ function applyState(st) {
     rawSet(K[k], val);
   });
   localStorage.setItem('love.updatedAt', String(st.updatedAt || Date.now()));
-  const metaIds = new Set((st.photosMeta || []).map(m => m.id));
-  rawSet(K.photos, load(K.photos, []).filter(p => metaIds.has(p.id)));
+  // 用对方的照片清单校对本地相册：删掉对方已删的，更新描述；本机刚传还没发上去的保留
+  const meta = st.photosMeta || [];
+  const metaIds = new Set(meta.map(m => m.id));
+  const pub = new Set(publishedIds());
+  const locals = load(K.photos, []);
+  const merged = [];
+  meta.forEach(m => {
+    const ex = locals.find(p => p.id === m.id);
+    if (ex) { ex.caption = m.caption; ex.date = m.date; merged.push(ex); }
+  });
+  locals.forEach(p => { if (!metaIds.has(p.id) && !pub.has(p.id)) merged.unshift(p); });
+  rawSet(K.photos, merged);
   S.profile = load(K.profile, null);
 }
 
@@ -534,23 +545,48 @@ async function decText(b64) {
   return new TextDecoder().decode(pt);
 }
 
-function pub(topic, payload) {
-  if (!SYNC.client || !SYNC.connected) return;
-  try { SYNC.client.publish(topic, payload, { retain: true }); } catch { /* 忽略 */ }
+/* 云端读写（Supabase 数据表 love_sync） */
+const sbHead = () => ({ 'apikey': SUPA.key, 'Authorization': 'Bearer ' + SUPA.key, 'Content-Type': 'application/json' });
+async function sbGet(rowId) {
+  const r = await fetch(SUPA.url + '/rest/v1/love_sync?id=eq.' + encodeURIComponent(rowId) + '&select=data,updated_at', { headers: sbHead() });
+  if (!r.ok) throw new Error('http ' + r.status);
+  const rows = await r.json();
+  return rows && rows[0] ? rows[0] : null;
 }
+async function sbPut(rowId, dataObj, updatedAt) {
+  const r = await fetch(SUPA.url + '/rest/v1/love_sync', {
+    method: 'POST',
+    headers: Object.assign(sbHead(), { 'Prefer': 'resolution=merge-duplicates' }),
+    body: JSON.stringify([{ id: rowId, data: dataObj, updated_at: updatedAt }]),
+  });
+  if (!r.ok) throw new Error('http ' + r.status);
+}
+async function sbDel(rowId) {
+  try { await fetch(SUPA.url + '/rest/v1/love_sync?id=eq.' + encodeURIComponent(rowId), { method: 'DELETE', headers: sbHead() }); } catch { /* 忽略 */ }
+}
+
 async function publishState() {
   if (!SYNC.code) return;
   const st = collectState();
   if (!st.profile) return; // 空档案不发布，防止覆盖对方数据
-  try { pub(syncBase() + '/state', await encText(JSON.stringify(st))); } catch { /* 忽略 */ }
+  try {
+    await sbPut(SYNC.code, { e: await encText(JSON.stringify(st)) }, st.updatedAt);
+    SYNC.connected = true;
+  } catch { SYNC.connected = false; /* 下次轮询时自动补发 */ }
+  renderSyncDot();
 }
 async function publishPhoto(p) {
   if (!SYNC.code || !p) return;
-  try { pub(syncBase() + '/photo/' + p.id, await encText(p.dataUrl)); } catch { /* 忽略 */ }
+  try {
+    await sbPut(photoRowId(p.id), { e: await encText(p.dataUrl) }, Date.now());
+    const done = new Set(publishedIds()); done.add(p.id);
+    rawSet('love.publishedPhotos', Array.from(done));
+  } catch { /* 下次轮询补发 */ }
 }
 function clearRemotePhoto(id) {
   if (!SYNC.code) return;
-  pub(syncBase() + '/photo/' + id, ''); // 空消息 = 删除
+  sbDel(photoRowId(id));
+  rawSet('love.publishedPhotos', publishedIds().filter(x => x !== id));
 }
 function publishedIds() { return load('love.publishedPhotos', []); }
 async function publishNewPhotos(forceAll) {
@@ -559,98 +595,76 @@ async function publishNewPhotos(forceAll) {
   for (const p of photos) {
     if (done.has(p.id)) continue;
     await publishPhoto(p);
-    done.add(p.id);
   }
-  rawSet('love.publishedPhotos', Array.from(done));
 }
 
 function renderSyncDot() {
   const el = document.getElementById('syncDot');
   if (!el) return;
-  if (!window.mqtt || !SYNC.started) el.textContent = '⚪ 同步服务连接中…';
+  if (!SYNC.started) el.textContent = '⚪ 正在连接同步服务…';
   else el.textContent = SYNC.connected ? '🟢 实时同步中' : '🔴 同步已断开（内容仍在，联网后自动恢复）';
 }
 
-window.__startSync = function () {
-  if (SYNC.started || !SYNC.code || !window.mqtt) return;
-  SYNC.started = true;
-  const brokers = ['wss://broker.emqx.io:8084/mqtt', 'wss://test.mosquitto.org:8081/mqtt'];
-  let bi = 0;
-  function connect() {
-    const url = brokers[bi % brokers.length]; bi++;
-    let c;
-    try {
-      c = window.mqtt.connect(url, {
-        clientId: 'love-' + Math.random().toString(36).slice(2, 12),
-        keepalive: 30, reconnectPeriod: 5000, connectTimeout: 10000, clean: true,
-      });
-    } catch { setTimeout(connect, 4000); return; }
-    SYNC.client = c;
-    c.on('connect', () => {
-      SYNC.connected = true; renderSyncDot();
-      c.subscribe([syncBase() + '/state', syncBase() + '/photo/+'], () => {
-        // 等 2.5 秒看云端有没有数据；没有就把本机数据发布上去（首次创建/云端数据丢失时恢复）
-        setTimeout(() => {
-          if (!SYNC.gotRemote && load(K.profile, null)) {
-            publishState();
-            publishNewPhotos(true);
-          }
-        }, 2500);
-      });
-    });
-    c.on('message', async (topic, buf) => {
-      try {
-        if (topic === syncBase() + '/state') {
-          const st = JSON.parse(await decText(buf.toString()));
-          if (!st || typeof st.updatedAt !== 'number') return;
-          SYNC.gotRemote = true;
-          if (st.updatedAt > localUpdatedAt()) {
-            applyState(st);
-            S.joining = false; S.joinFailed = false;
-            render();
-          } else if (st.updatedAt < localUpdatedAt() && load(K.profile, null)) {
-            publishState(); // 本机更新，把新数据推给 TA
-          }
-        } else if (topic.indexOf(syncBase() + '/photo/') === 0) {
-          const id = topic.slice((syncBase() + '/photo/').length);
-          const list = load(K.photos, []);
-          if (buf.length === 0) {
-            rawSet(K.photos, list.filter(p => p.id !== id));
-          } else {
-            const dataUrl = await decText(buf.toString());
-            const i = list.findIndex(p => p.id === id);
-            if (i >= 0) list[i].dataUrl = dataUrl;
-            else list.unshift({ id, dataUrl, caption: '', date: todayStr() });
-            rawSet(K.photos, list);
-            const done = new Set(publishedIds()); done.add(id); rawSet('love.publishedPhotos', Array.from(done));
-          }
-          if (S.profile && S.tab === 'album') render();
+/* 从云端拉一次数据 */
+async function pullOnce() {
+  if (!SYNC.code || SYNC.polling) return;
+  SYNC.polling = true;
+  try {
+    const row = await sbGet(SYNC.code);
+    SYNC.connected = true; renderSyncDot();
+    if (row && row.data && row.data.e) {
+      const st = JSON.parse(await decText(row.data.e));
+      if (st && typeof st.updatedAt === 'number') {
+        SYNC.gotRemote = true;
+        SYNC.lastMeta = st.photosMeta || [];
+        if (st.updatedAt > localUpdatedAt()) {
+          applyState(st);
+          S.joining = false; S.joinFailed = false;
+          render();
+        } else if (st.updatedAt < localUpdatedAt() && load(K.profile, null)) {
+          publishState(); // 本机更新，把新数据推给 TA
         }
-      } catch { /* 解密失败的消息（不是我们的配对码）直接忽略 */ }
-    });
-    c.on('close', () => { SYNC.connected = false; renderSyncDot(); });
-    c.on('error', () => { try { c.end(true); } catch { /* 忽略 */ } if (!SYNC.connected) setTimeout(connect, 4000); });
+      }
+    } else {
+      SYNC.lastMeta = [];
+      // 云端还没有数据：本机有档案就发布上去（首次创建 / 云端数据丢失时恢复）
+      if (load(K.profile, null)) { publishState(); publishNewPhotos(true); }
+    }
+    await pullMissingPhotos();
+  } catch {
+    SYNC.connected = false; renderSyncDot();
+  } finally {
+    SYNC.polling = false;
   }
-  connect();
-};
+}
+/* 对方新传的照片，逐张拉下来 */
+async function pullMissingPhotos() {
+  const metas = SYNC.lastMeta || [];
+  if (!metas.length) return;
+  let changed = false;
+  for (const m of metas) {
+    if (load(K.photos, []).some(p => p.id === m.id)) continue;
+    try {
+      const row = await sbGet(photoRowId(m.id));
+      if (!row || !row.data || !row.data.e) continue;
+      const dataUrl = await decText(row.data.e);
+      const list = load(K.photos, []);
+      if (!list.some(p => p.id === m.id)) {
+        list.unshift({ id: m.id, dataUrl, caption: m.caption || '', date: m.date || todayStr() });
+        rawSet(K.photos, list);
+        changed = true;
+      }
+    } catch { /* 下轮再试 */ }
+  }
+  if (changed && S.profile && S.tab === 'album') render();
+}
 
-/* 按需加载 MQTT 库（两个 CDN 互为备份；都失败也不影响本机使用） */
-(function loadMqtt() {
-  const urls = [
-    'https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js',
-    'https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js',
-  ];
-  let i = 0;
-  function next() {
-    if (i >= urls.length) { renderSyncDot(); return; }
-    const s = document.createElement('script');
-    s.src = urls[i++];
-    s.onload = () => { window.__startSync && window.__startSync(); renderSyncDot(); };
-    s.onerror = () => next();
-    document.head.appendChild(s);
-  }
-  next();
-})();
+window.__startSync = function () {
+  if (SYNC.started || !SYNC.code) return;
+  SYNC.started = true; renderSyncDot();
+  pullOnce();
+  SYNC.pollTimer = setInterval(pullOnce, 5000); // 每 5 秒和云端对一次，一直同步
+};
 
 /* ============ 交互 ============ */
 let pickedEmoji = '😍', pickedWho = '';
@@ -699,17 +713,28 @@ document.addEventListener('click', e => {
       SYNC.code = c; rawSet('love.syncCode', c);
       S.joining = true; S.joinFailed = false; render();
       window.__startSync();
-      setTimeout(() => { if (S.joining && !S.profile) { S.joining = false; S.joinFailed = true; render(); } }, 12000);
+      setTimeout(() => { if (S.joining && !S.profile) { S.joining = false; S.joinFailed = true; render(); } }, 15000);
       break;
     }
     case 'retryJoin':
       S.joinFailed = false; S.joining = true; render();
-      setTimeout(() => { if (S.joining && !S.profile) { S.joining = false; S.joinFailed = true; render(); } }, 12000);
+      pullOnce();
+      setTimeout(() => { if (S.joining && !S.profile) { S.joining = false; S.joinFailed = true; render(); } }, 15000);
       break;
     case 'freshStart':
       localStorage.removeItem('love.syncCode'); SYNC.code = null;
       S.joinFailed = false; S.joining = false; render();
       break;
+    case 'copyInvite': {
+      const link = location.origin + location.pathname + '#join=' + (SYNC.code || '');
+      const done2 = () => alert('邀请链接已复制，用微信发给 TA 吧 💌\nTA 点开链接就会自动配对，不用输码');
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).then(done2).catch(() => { prompt('长按复制邀请链接：', link); });
+      } else {
+        prompt('长按复制邀请链接：', link);
+      }
+      break;
+    }
     case 'copyCode': {
       const code = SYNC.code || '';
       const done2 = () => alert('配对码已复制，用微信发给 TA 吧 💌');
@@ -840,6 +865,17 @@ if (S.profile && !SYNC.code) {
   SYNC.code = genCode();
   rawSet('love.syncCode', SYNC.code);
 }
+
+/* 邀请链接自动配对：TA 点开带 #join=配对码 的链接就自动加入，不用输码 */
+(function autoJoin() {
+  const m = (location.hash || '').match(/join=([A-Za-z0-9]{4,})/i);
+  try { history.replaceState(null, '', location.pathname + location.search); } catch { /* 忽略 */ }
+  if (!m || S.profile) return;
+  const c = m[1].toUpperCase();
+  SYNC.code = c; rawSet('love.syncCode', c);
+  S.joining = true;
+  setTimeout(() => { if (S.joining && !S.profile) { S.joining = false; S.joinFailed = true; render(); } }, 15000);
+})();
 
 render();
 window.__startSync();
